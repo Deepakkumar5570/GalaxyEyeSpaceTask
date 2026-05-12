@@ -3,7 +3,7 @@ MODEL:
   TYPE: siamese
 
 DATASET:
-  ROOT: "C:\Users\lenovo\Downloads\GalexyEye"
+  ROOT: /kaggle/input/datasets/syraverma/galaxeye-change-detection
   PATCH_SIZE: 256
   MODE: siamese
 
