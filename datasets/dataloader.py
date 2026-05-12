@@ -8,51 +8,106 @@ from datasets.transforms import (
 )
 
 
+# =========================================================
+# BUILD DATALOADERS
+# =========================================================
+
 def build_dataloaders(config):
 
+    # =====================================================
+    # TRAIN DATASET
+    # =====================================================
+
     train_dataset = GalaxEyeDataset(
-        root_dir=f'{config["DATASET"]["ROOT"]}/train/train',
+
+        root_dir=f'{config["DATASET"]["ROOT"]}/train',
+
         config=config,
+
         transforms=get_train_transforms()
     )
 
+    # =====================================================
+    # VALIDATION DATASET
+    # =====================================================
+
     val_dataset = GalaxEyeDataset(
-        root_dir=f'{config["DATASET"]["ROOT"]}/val/val',
+
+        root_dir=f'{config["DATASET"]["ROOT"]}/val',
+
         config=config,
+
         transforms=get_val_transforms()
     )
+
+    # =====================================================
+    # TEST DATASET
+    # =====================================================
 
     test_dataset = GalaxEyeDataset(
-        root_dir=f'{config["DATASET"]["ROOT"]}/test/test',
+
+        root_dir=f'{config["DATASET"]["ROOT"]}/test',
+
         config=config,
+
         transforms=get_val_transforms()
     )
 
+    # =====================================================
+    # TRAIN LOADER
+    # =====================================================
+
     train_loader = DataLoader(
+
         train_dataset,
+
         batch_size=config["TRAIN"]["BATCH_SIZE"],
+
         shuffle=True,
+
         num_workers=config["TRAIN"]["NUM_WORKERS"],
+
         pin_memory=True,
-        persistent_workers=True
+
+        drop_last=True
     )
+
+    # =====================================================
+    # VALIDATION LOADER
+    # =====================================================
 
     val_loader = DataLoader(
+
         val_dataset,
+
         batch_size=config["TRAIN"]["BATCH_SIZE"],
+
         shuffle=False,
+
         num_workers=config["TRAIN"]["NUM_WORKERS"],
-        pin_memory=True,
-        persistent_workers=True
+
+        pin_memory=True
     )
+
+    # =====================================================
+    # TEST LOADER
+    # =====================================================
 
     test_loader = DataLoader(
+
         test_dataset,
+
         batch_size=config["TRAIN"]["BATCH_SIZE"],
+
         shuffle=False,
+
         num_workers=config["TRAIN"]["NUM_WORKERS"],
-        pin_memory=True,
-        persistent_workers=True
+
+        pin_memory=True
     )
 
-    return train_loader, val_loader, test_loader
+    return (
+        train_loader,
+        val_loader,
+        test_loader
+    )
