@@ -1,14 +1,11 @@
 import argparse
-import yaml
 import torch
 
-from datasets.dataset import GalaxEyeDataset
-from datasets.transforms import (
-    get_train_transforms,
-    get_val_transforms
-)
+from utils.config import load_config
+from utils.device import get_device
+from utils.seed import seed_everything
 
-from torch.utils.data import DataLoader
+from datasets.dataloader import build_dataloaders
 
 from models.model_factory import build_model
 
@@ -16,6 +13,10 @@ from losses.combined_loss import CombinedLoss
 
 from engine.trainer import Trainer
 
+
+# =========================================================
+# ARGUMENTS
+# =========================================================
 
 parser = argparse.ArgumentParser()
 
@@ -28,54 +29,98 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-with open(args.config) as f:
+# =========================================================
+# CONFIG
+# =========================================================
 
-    config = yaml.safe_load(f)
-
-
-DEVICE = torch.device(
-    "cuda" if torch.cuda.is_available() else "cpu"
-)
+config = load_config(args.config)
 
 
-train_dataset = GalaxEyeDataset(
-    root_dir=f'{config["DATASET"]["ROOT"]}/train/train',
-    config=config,
-    transforms=get_train_transforms()
-)
+# =========================================================
+# SEED
+# =========================================================
+
+seed_everything(42)
 
 
-train_loader = DataLoader(
-    train_dataset,
-    batch_size=config["TRAIN"]["BATCH_SIZE"],
-    shuffle=True,
-    num_workers=config["TRAIN"]["NUM_WORKERS"]
-)
+# =========================================================
+# DEVICE
+# =========================================================
 
+DEVICE = get_device()
+
+print(f"Using Device: {DEVICE}")
+
+
+# =========================================================
+# DATALOADERS
+# =========================================================
+
+train_loader, val_loader, _ = build_dataloaders(config)
+
+
+# =========================================================
+# MODEL
+# =========================================================
 
 model = build_model(config)
 
+if torch.cuda.device_count() > 1:
+
+    print(f"Using {torch.cuda.device_count()} GPUs")
+
+    model = torch.nn.DataParallel(model)
+
 model = model.to(DEVICE)
+
+
+# =========================================================
+# LOSS
+# =========================================================
 
 criterion = CombinedLoss()
 
+
+# =========================================================
+# OPTIMIZER
+# =========================================================
+
 optimizer = torch.optim.AdamW(
     model.parameters(),
-    lr=config["TRAIN"]["LR"]
+    lr=config["TRAIN"]["LR"],
+    weight_decay=1e-4
 )
 
+
+# =========================================================
+# SCHEDULER
+# =========================================================
+
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+    optimizer,
+    T_max=config["TRAIN"]["EPOCHS"]
+)
+
+
+# =========================================================
+# TRAINER
+# =========================================================
 
 trainer = Trainer(
-    model,
-    criterion,
-    optimizer,
-    config,
-    DEVICE
+    model=model,
+    criterion=criterion,
+    optimizer=optimizer,
+    scheduler=scheduler,
+    config=config,
+    device=DEVICE
 )
 
 
-for epoch in range(config["TRAIN"]["EPOCHS"]):
+# =========================================================
+# START TRAINING
+# =========================================================
 
-    loss = trainer.train_epoch(train_loader)
-
-    print(f"Epoch {epoch+1} Loss: {loss:.4f}")
+trainer.fit(
+    train_loader,
+    val_loader
+)
