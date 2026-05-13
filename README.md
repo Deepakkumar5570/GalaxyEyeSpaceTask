@@ -33,6 +33,7 @@ The project evolved from a simple UNet baseline into a research-oriented Attenti
 
 ---
 
+
 # Requirements
 
 ## Python Version
@@ -219,7 +220,7 @@ for example in my case
 F:\GalaxyEyeSpaceTask\evaluate.py
 
 ```
-Path are 
+Paths are 
 ```
 DATASET_PATH = r"C:\Users\lenovo\Downloads\GalexyEye"
 
@@ -537,5 +538,22 @@ This project satisfies assignment requirements by:
 * Reporting evaluation metrics
 * Providing visualization analysis
 * Demonstrating systematic experimentation
+
+
+# Refrences to my work space 
+
+
+Github link 
+-  for Locally setup Environment
+  
+                  https://github.com/Deepakkumar5570/GalaxyEyeSpaceTask
+   
+- For Kaggle enviorment
+  
+                   https://github.com/Deepakkumar5570/GalaxyEyeSpace
+
+- Kaggle Link
+
+             https://www.kaggle.com/code/deepakkumari2004/galaxytask
 
 ---
