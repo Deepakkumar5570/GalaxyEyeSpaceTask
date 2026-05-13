@@ -1,0 +1,41 @@
+MODEL:
+  NAME: resnet34_unet
+  TYPE: concatenated
+  DESCRIPTION: Robust UNet with strong augmentations and Dice + Focal Loss
+
+ENCODER:
+  NAME: resnet34
+  WEIGHTS: imagenet
+
+DATASET:
+  ROOT: C:/Users/lenovo/Downloads/GalexyEye
+  PATCH_SIZE: 256
+  MODE: concatenated
+  NUM_CLASSES: 2
+
+TRAIN:
+  BATCH_SIZE: 4
+  EPOCHS: 50
+  LR: 0.0001
+  NUM_WORKERS: 0
+  OPTIMIZER: AdamW
+  SCHEDULER: CosineAnnealingLR
+  EARLY_STOPPING_PATIENCE: 5
+
+LOSS:
+  NAME: dice_focal
+
+AUGMENTATION:
+  HORIZONTAL_FLIP: true
+  VERTICAL_FLIP: true
+  ROTATE_90: true
+  SHIFT_SCALE_ROTATE: true
+  BRIGHTNESS_CONTRAST: true
+  RANDOM_GAMMA: true
+  GAUSS_NOISE: true
+  GAUSSIAN_BLUR: true
+  COARSE_DROPOUT: true
+
+OUTPUT:
+  CHECKPOINT_DIR: outputs/checkpoints/robust_unet
+  LOG_DIR: outputs/logs/robust_unet

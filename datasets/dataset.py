@@ -1,22 +1,63 @@
 import os
 import cv2
 import torch
-import random
+import logging
+import warnings
 import numpy as np
 
 from torch.utils.data import Dataset
 
 
+# =========================================================
+# SUPPRESS WARNINGS
+# =========================================================
+
+warnings.filterwarnings("ignore")
+
+os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
+
+logging.getLogger("PIL").setLevel(logging.ERROR)
+
+try:
+
+    cv2.setNumThreads(0)
+
+except:
+
+    pass
+
+try:
+
+    cv2.utils.logging.setLogLevel(
+        cv2.utils.logging.LOG_LEVEL_ERROR
+    )
+
+except:
+
+    pass
+
+
+# =========================================================
+# DATASET
+# =========================================================
+
 class GalaxEyeDataset(Dataset):
 
     def __init__(
+
         self,
+
         root_dir,
+
         config,
+
         transforms=None
+
     ):
 
         self.root_dir = root_dir
+
+        self.config = config
 
         self.transforms = transforms
 
@@ -24,69 +65,292 @@ class GalaxEyeDataset(Dataset):
 
         self.mode = config["DATASET"]["MODE"]
 
-        self.pre_path = os.path.join(root_dir, "pre-event")
+        # =====================================================
+        # PATHS
+        # =====================================================
 
-        self.post_path = os.path.join(root_dir, "post-event")
+        self.pre_path = os.path.join(
+            root_dir,
+            "pre-event"
+        )
 
-        self.mask_path = os.path.join(root_dir, "target")
+        self.post_path = os.path.join(
+            root_dir,
+            "post-event"
+        )
 
-        self.files = sorted(os.listdir(self.pre_path))
+        self.mask_path = os.path.join(
+            root_dir,
+            "target"
+        )
+
+        # =====================================================
+        # FILES
+        # =====================================================
+
+        self.files = sorted([
+
+            f for f in os.listdir(self.pre_path)
+
+            if f.endswith(
+
+                (
+                    ".png",
+                    ".jpg",
+                    ".jpeg",
+                    ".tif",
+                    ".tiff"
+                )
+            )
+        ])
+
+        self.samples = []
+
+        # =====================================================
+        # VALIDATE FILES
+        # =====================================================
+
+        for file_name in self.files:
+
+            pre_file = os.path.join(
+                self.pre_path,
+                file_name
+            )
+
+            post_file = os.path.join(
+                self.post_path,
+                file_name
+            )
+
+            mask_file = os.path.join(
+                self.mask_path,
+                file_name
+            )
+
+            if (
+
+                os.path.exists(pre_file)
+
+                and os.path.exists(post_file)
+
+                and os.path.exists(mask_file)
+
+            ):
+
+                self.samples.append(
+
+                    (
+                        pre_file,
+                        post_file,
+                        mask_file
+                    )
+                )
+
+        print(
+
+            f"\nLoaded {len(self.samples)} samples from {root_dir}"
+
+        )
+
+    # =========================================================
+    # LENGTH
+    # =========================================================
 
     def __len__(self):
 
-        return len(self.files)
+        return len(self.samples)
+
+    # =========================================================
+    # SAFE IMAGE READER
+    # =========================================================
+
+    def read_image(
+
+        self,
+
+        path,
+
+        flag
+
+    ):
+
+        image = cv2.imdecode(
+
+            np.fromfile(
+                path,
+                dtype=np.uint8
+            ),
+
+            flag
+        )
+
+        return image
+
+    # =========================================================
+    # GET ITEM
+    # =========================================================
 
     def __getitem__(self, idx):
 
-        file_name = self.files[idx]
+        pre_file, post_file, mask_file = self.samples[idx]
 
-        pre = cv2.imread(
-            os.path.join(self.pre_path, file_name)
+        # =====================================================
+        # READ IMAGES
+        # =====================================================
+
+        pre_image = self.read_image(
+            pre_file,
+            cv2.IMREAD_COLOR
         )
 
-        post = cv2.imread(
-            os.path.join(self.post_path, file_name)
+        post_image = self.read_image(
+            post_file,
+            cv2.IMREAD_COLOR
         )
 
-        mask = cv2.imread(
-            os.path.join(self.mask_path, file_name),
+        mask = self.read_image(
+            mask_file,
             cv2.IMREAD_GRAYSCALE
         )
 
-        pre = cv2.resize(pre, (self.patch_size, self.patch_size))
+        # =====================================================
+        # BGR TO RGB
+        # =====================================================
 
-        post = cv2.resize(post, (self.patch_size, self.patch_size))
+        pre_image = cv2.cvtColor(
+            pre_image,
+            cv2.COLOR_BGR2RGB
+        )
 
-        mask = cv2.resize(mask, (self.patch_size, self.patch_size))
+        post_image = cv2.cvtColor(
+            post_image,
+            cv2.COLOR_BGR2RGB
+        )
 
-        if self.transforms:
+        # =====================================================
+        # RESIZE
+        # =====================================================
 
-            transformed = self.transforms(
-                image=pre,
-                image0=post,
+        pre_image = cv2.resize(
+
+            pre_image,
+
+            (
+                self.patch_size,
+                self.patch_size
+            )
+        )
+
+        post_image = cv2.resize(
+
+            post_image,
+
+            (
+                self.patch_size,
+                self.patch_size
+            )
+        )
+
+        mask = cv2.resize(
+
+            mask,
+
+            (
+                self.patch_size,
+                self.patch_size
+            ),
+
+            interpolation=cv2.INTER_NEAREST
+        )
+
+        # =====================================================
+        # NORMALIZE
+        # =====================================================
+
+        pre_image = (
+
+            pre_image.astype(np.float32)
+
+            / 255.0
+        )
+
+        post_image = (
+
+            post_image.astype(np.float32)
+
+            / 255.0
+        )
+
+        mask = (
+
+            mask > 0
+
+        ).astype(np.int64)
+
+        # =====================================================
+        # AUGMENTATIONS
+        # =====================================================
+
+        if self.transforms is not None:
+
+            augmented = self.transforms(
+
+                image=pre_image,
+
+                image0=post_image,
+
                 mask=mask
             )
 
-            pre = transformed["image"]
+            pre_image = augmented["image"]
 
-            post = transformed["image0"]
+            post_image = augmented["image0"]
 
-            mask = transformed["mask"]
+            mask = augmented["mask"]
 
-        pre = torch.tensor(pre).permute(2,0,1).float() / 255.0
+        # =====================================================
+        # TO TENSOR
+        # =====================================================
 
-        post = torch.tensor(post).permute(2,0,1).float() / 255.0
+        pre_image = torch.tensor(
+            pre_image
+        ).permute(2, 0, 1).float()
 
-        mask = torch.tensor((mask > 0).astype(np.int64))
+        post_image = torch.tensor(
+            post_image
+        ).permute(2, 0, 1).float()
 
-        # CONCAT MODE
-        if self.mode == "concatenated":
+        mask = torch.tensor(
+            mask
+        ).long()
 
-            image = torch.cat([pre, post], dim=0)
-
-            return image, mask
-
+        # =====================================================
         # SIAMESE MODE
-        else:
+        # =====================================================
 
-            return pre, post, mask
+        if self.mode == "siamese":
+
+            return (
+
+                pre_image,
+
+                post_image,
+
+                mask
+            )
+
+        # =====================================================
+        # CONCAT MODE
+        # =====================================================
+
+        image = torch.cat(
+
+            [
+                pre_image,
+                post_image
+            ],
+
+            dim=0
+        )
+
+        return image, mask

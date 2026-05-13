@@ -1,16 +1,34 @@
 MODEL:
   NAME: siamese_unet
+  TYPE: siamese
+  DESCRIPTION: Siamese dual-stream UNet with shared ResNet34 encoder
+
+ENCODER:
+  NAME: resnet34
+  WEIGHTS: imagenet
+  SHARED: true
+
+FUSION:
+  TYPE: late_fusion
 
 DATASET:
-  ROOT: /kaggle/input/datasets/syraverma/galaxeye-change-detection
+  ROOT: F:/datasets/galaxeye-change-detection
   PATCH_SIZE: 256
   MODE: siamese
+  NUM_CLASSES: 2
 
 TRAIN:
-  BATCH_SIZE: 16
+  BATCH_SIZE: 4
   EPOCHS: 50
   LR: 0.0001
-  NUM_WORKERS: 2
+  NUM_WORKERS: 0
+  OPTIMIZER: AdamW
+  SCHEDULER: CosineAnnealingLR
+  EARLY_STOPPING_PATIENCE: 5
+
+LOSS:
+  NAME: dice_focal
 
 OUTPUT:
   CHECKPOINT_DIR: outputs/checkpoints/siamese_unet
+  LOG_DIR: outputs/logs/siamese_unet

@@ -1,0 +1,46 @@
+MODEL:
+  NAME: future_changeformer
+  TYPE: transformer
+  DESCRIPTION: Transformer-based future ChangeFormer architecture
+
+ENCODER:
+  NAME: transformer_encoder
+
+ATTENTION:
+  NAME: self_attention
+
+FUSION:
+  TYPE: transformer_fusion
+
+DATASET:
+  ROOT: F:/datasets/galaxeye-change-detection
+  PATCH_SIZE: 256
+  MODE: siamese
+  NUM_CLASSES: 2
+
+TRAIN:
+  BATCH_SIZE: 2
+  EPOCHS: 100
+  LR: 0.0001
+  NUM_WORKERS: 0
+  OPTIMIZER: AdamW
+  SCHEDULER: CosineAnnealingLR
+  EARLY_STOPPING_PATIENCE: 10
+
+LOSS:
+  NAME: dice_focal
+
+AUGMENTATION:
+  HORIZONTAL_FLIP: true
+  VERTICAL_FLIP: true
+  ROTATE_90: true
+  SHIFT_SCALE_ROTATE: true
+  BRIGHTNESS_CONTRAST: true
+  RANDOM_GAMMA: true
+  GAUSS_NOISE: true
+  GAUSSIAN_BLUR: true
+  COARSE_DROPOUT: true
+
+OUTPUT:
+  CHECKPOINT_DIR: outputs/checkpoints/future_changeformer
+  LOG_DIR: outputs/logs/future_changeformer
