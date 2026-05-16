@@ -90,7 +90,7 @@ class SiameseUNet(nn.Module):
             fused_features.append(fused)
 
         decoder_output = self.decoder(
-            *fused_features
+            fused_features
         )
 
         masks = self.segmentation_head(
