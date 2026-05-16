@@ -35,7 +35,7 @@ DEVICE = torch.device(
 
 
 test_dataset = GalaxEyeDataset(
-    root_dir=f'{config["DATASET"]["ROOT"]}/test/test',
+    root_dir=f'{config["DATASET"]["ROOT"]}/test',
     config=config,
     transforms=get_val_transforms()
 )
