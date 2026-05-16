@@ -202,6 +202,7 @@ python -m torch.distributed.launch train.py --config configs/siamese_unet.yaml
 
 # Evaluation
 
+
 ## Evaluate on Test Dataset
 before evaluation part set path
 - go into 
@@ -211,6 +212,337 @@ evaluate.py
 
 
 ```
+# Model Evaluation Guide
+
+This guide explains how to correctly use `evaluate.py` for different trained models.
+
+---
+
+# IMPORTANT RULE
+
+For every model evaluation:
+
+You MUST use:
+
+- correct import
+- correct model class
+- correct checkpoint weight
+
+All three should belong to the SAME architecture.
+
+Otherwise you will get errors like:
+
+```bash
+Missing key(s) in state_dict
+Unexpected key(s) in state_dict
+RuntimeError while loading model
+```
+
+---
+
+# HOW TO USE `evaluate.py`
+
+Open:
+
+```bash
+evaluate.py
+```
+
+Then modify:
+
+- import statement
+- model initialization
+- checkpoint path
+
+according to the trained model.
+
+---
+
+# 1. BASIC UNET
+
+## In `evaluate.py`
+
+### Replace Import With
+
+```python
+from models.unet.basic_unet import (
+    BasicUNet
+)
+```
+
+### Replace Model Initialization With
+
+```python
+model = BasicUNet()
+```
+
+### Replace Checkpoint Path With
+
+```python
+MODEL_PATH = r"outputs/checkpoints/basic_unet/best_model.pth"
+```
+
+### Run
+
+```bash
+python evaluate.py --config configs/basic_unet.yaml
+```
+
+---
+
+# 2. RESNET34 UNET
+
+## In `evaluate.py`
+
+### Replace Import With
+
+```python
+from models.unet.resnet34_unet import (
+    ResNet34UNet
+)
+```
+
+### Replace Model Initialization With
+
+```python
+model = ResNet34UNet()
+```
+
+### Replace Checkpoint Path With
+
+```python
+MODEL_PATH = r"outputs/checkpoints/resnet34_unet/best_model.pth"
+```
+
+### Run
+
+```bash
+python evaluate.py --config configs/resnet34_unet.yaml
+```
+
+---
+
+# 3. ROBUST UNET
+
+## In `evaluate.py`
+
+### Replace Import With
+
+```python
+from models.unet.robust_unet import (
+    RobustUNet
+)
+```
+
+### Replace Model Initialization With
+
+```python
+model = RobustUNet()
+```
+
+### Replace Checkpoint Path With
+
+```python
+MODEL_PATH = r"outputs/checkpoints/robust_unet/best_model.pth"
+```
+
+### Run
+
+```bash
+python evaluate.py --config configs/robust_unet.yaml
+```
+
+---
+
+# 4. SIAMESE UNET
+
+## In `evaluate.py`
+
+### Replace Import With
+
+```python
+from models.unet.siamese_unet import (
+    SiameseUNet
+)
+```
+
+### Replace Model Initialization With
+
+```python
+model = SiameseUNet()
+```
+
+### Replace Checkpoint Path With
+
+```python
+MODEL_PATH = r"outputs/checkpoints/siamese_unet/best_model.pth"
+```
+
+### Run
+
+```bash
+python evaluate.py --config configs/siamese_unet.yaml
+```
+
+---
+
+# 5. ATTENTION SIAMESE UNET
+
+## In `evaluate.py`
+
+### Replace Import With
+
+```python
+from models.attention.attention_siamese_unet import (
+    AttentionSiameseUNet
+)
+```
+
+### Replace Model Initialization With
+
+```python
+model = AttentionSiameseUNet()
+```
+
+### Replace Checkpoint Path With
+
+```python
+MODEL_PATH = r"outputs/attention_siamese_checkpoints/best_attention_model.pth"
+```
+
+### Run
+
+```bash
+python evaluate.py --config configs/attention_siamese_unet.yaml
+```
+
+---
+
+# 6. CHANGEFORMER
+
+## In `evaluate.py`
+
+### Replace Import With
+
+```python
+from models.transformers.changeformer import (
+    ChangeFormer
+)
+```
+
+### Replace Model Initialization With
+
+```python
+model = ChangeFormer()
+```
+
+### Replace Checkpoint Path With
+
+```python
+MODEL_PATH = r"outputs/changeformer_checkpoints/best_changeformer_model.pth"
+```
+
+### Run
+
+```bash
+python evaluate.py --config configs/changeformer.yaml
+```
+
+---
+
+# WRONG USAGE ❌
+
+```python
+from models.attention.attention_siamese_unet import (
+    AttentionSiameseUNet
+)
+
+model = AttentionSiameseUNet()
+
+MODEL_PATH = "outputs/checkpoints/siamese_unet/best_model.pth"
+```
+
+This is WRONG because:
+
+- attention model expects attention weights
+- siamese checkpoint does not contain them
+
+This causes:
+
+```bash
+Missing key(s) in state_dict
+Unexpected key(s) in state_dict
+```
+
+---
+
+# CORRECT USAGE ✅
+
+```python
+from models.unet.siamese_unet import (
+    SiameseUNet
+)
+
+model = SiameseUNet()
+
+MODEL_PATH = "outputs/checkpoints/siamese_unet/best_model.pth"
+```
+
+---
+
+# QUICK REFERENCE TABLE
+
+| Model | Import | Checkpoint |
+|---|---|---|
+| Basic UNet | `BasicUNet` | `basic_unet/best_model.pth` |
+| ResNet34 UNet | `ResNet34UNet` | `resnet34_unet/best_model.pth` |
+| Robust UNet | `RobustUNet` | `robust_unet/best_model.pth` |
+| Siamese UNet | `SiameseUNet` | `siamese_unet/best_model.pth` |
+| Attention Siamese UNet | `AttentionSiameseUNet` | `best_attention_model.pth` |
+| ChangeFormer | `ChangeFormer` | `best_changeformer_model.pth` |
+
+---
+
+# BEST PRACTICE
+
+Keep separate checkpoint folders for every architecture.
+
+Recommended structure:
+
+```bash
+outputs/
+│
+├── checkpoints/
+│   ├── basic_unet/
+│   ├── robust_unet/
+│   ├── resnet34_unet/
+│   └── siamese_unet/
+│
+├── attention_siamese_checkpoints/
+│
+└── changeformer_checkpoints/
+```
+
+This avoids:
+- checkpoint confusion
+- architecture mismatch
+- loading errors
+
+---
+
+# FINAL NOTE
+
+Whenever you change:
+
+- encoder
+- decoder
+- fusion method
+- attention blocks
+- architecture
+
+You MUST train a NEW model.
+
+Old checkpoints cannot be reused with different architectures.
 ste path for 
 - Weigth
 - Root dataset path
