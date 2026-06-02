@@ -4,7 +4,7 @@ MODEL:
   DESCRIPTION: Basic UNet baseline for change detection
 
 DATASET:
-  ROOT: F:/datasets/galaxeye-change-detection
+  ROOT: C:\Users\lenovo\Downloads\GalexyEye
   PATCH_SIZE: 256
   MODE: concatenated
   NUM_CLASSES: 2

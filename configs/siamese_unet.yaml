@@ -12,7 +12,7 @@ FUSION:
   TYPE: late_fusion
 
 DATASET:
-  ROOT: F:/datasets/galaxeye-change-detection
+  ROOT: C:\Users\lenovo\Downloads\GalexyEye
   PATCH_SIZE: 256
   MODE: siamese
   NUM_CLASSES: 2
